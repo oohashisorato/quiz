@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>そらとの2人早押しゲーム</title>
+<style>
+body {margin:0; padding:0; font-family:'Arial',sans-serif; background:#fff0f5; display:flex; flex-direction:column; height:100vh;}
+.player-area {flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; border-bottom:2px solid #ffcccc; position:relative;}
+.player-area:last-child {border-bottom:none;}
+.early-text {font-size:24px;color:#ff69b4;font-weight:bold;position:absolute;top:20px;}
+.choices {display:flex; flex-wrap:wrap; justify-content:center; margin-top:60px;}
+.choice {background:#ffd7ef; margin:8px; padding:15px 25px; border-radius:12px; cursor:pointer; font-size:18px; min-width:120px; text-align:center; transition: transform 0.1s;}
+.choice:active {transform: scale(0.95);}
+.score {position:absolute; top:20px; right:20px; font-size:20px; font-weight:bold; color:#ff69b4;}
+#title-screen {position:absolute; top:0; left:0; width:100%; height:100%; background:#ffb6c1; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10;}
+#title-screen h1 {font-size:32px; margin-bottom:30px;}
+#title-screen button {padding:15px 30px; font-size:20px; border:none; border-radius:12px; background:#ff69b4; color:white; cursor:pointer;}
+#question-text {font-size:24px; font-weight:bold; margin-top:20px;}
+</style>
+</head>
+<body>
+
+<div id="title-screen">
+  <h1>🎉 そらとの早押しゲーム 🎉</h1>
+  <button onclick="startGame()">スタート！</button>
+</div>
+
+<div id="question-text"></div>
+
+<div id="player1-area" class="player-area">
+  <div class="early-text">Player 1 タップで早押し</div>
+  <div class="score" id="score1">0</div>
+  <div id="player1-choices" class="choices"></div>
+</div>
+
+<div id="player2-area" class="player-area">
+  <div class="early-text">Player 2 タップで早押し</div>
+  <div class="score" id="score2">0</div>
+  <div id="player2-choices" class="choices"></div>
+</div>
+
+<script>
+const questions = [
+  {q:"1+1は？", c:["2","3","1","5"], a:0},
+  {q:"3×3は？", c:["6","9","12","33"], a:1},
+  {q:"日本の首都は？", c:["大阪","京都","東京","名古屋"], a:2},
+  {q:"リンゴは英語で？", c:["apple","orange","grape","banana"], a:0},
+  {q:"そらとの好きな遊びは？", c:["水遊び","勉強","掃除","貯金"], a:0},
+  {q:"太陽は何色？", c:["赤","黄色","青","緑"], a:1},
+  {q:"1+2+3は？", c:["5","6","4","7"], a:1},
+  {q:"日本の国旗は何色？", c:["赤と白","青と白","緑と白","黒と白"], a:0},
+  {q:"犬の鳴き声は？", c:["ニャー","ワン","コケコッコー","ブーブー"], a:1},
+  {q:"空はなぜ青い？", c:["反射","大気散乱","光吸収","太陽光"], a:1},
+  {q:"5×5は？", c:["20","25","30","35"], a:1},
+  {q:"りんごの色で正しいのは？", c:["赤","青","黒","紫"], a:0},
+  {q:"地球の周りを回るのは？", c:["月","太陽","火星","木星"], a:0},
+  {q:"水は何度で沸騰する？", c:["90度","95度","100度","105度"], a:2},
+  {q:"「ありがとう」の英語は？", c:["Hello","Thanks","Bye","Yes"], a:1},
+  {q:"1ダースは何個？", c:["10","12","15","20"], a:1},
+  {q:"七五三は何歳の祝い？", c:["3・5・7","2・4・6","1・3・5","5・7・9"], a:0},
+  {q:"雷は何で鳴る？", c:["電気","風","雨","雲"], a:0},
+  {q:"桜はいつ咲く？", c:["春","夏","秋","冬"], a:0},
+  {q:"日本の通貨は？", c:["ドル","ユーロ","円","ポンド"], a:2},
+  {q:"猫の鳴き声は？", c:["ワン","ニャー","モー","ガオ"], a:1},
+  {q:"魚は呼吸に何を使う？", c:["肺","えら","皮膚","口"], a:1},
+  {q:"月は自分で光る？", c:["はい","いいえ","時々","わからない"], a:1},
+  {q:"雪は何色？", c:["白","青","黒","緑"], a:0},
+  {q:"夏に暑くなる理由は？", c:["地球が太陽に近いから","地球の傾き","月の影響","空気が薄い"], a:1},
+  {q:"1時間は何分？", c:["60","30","90","120"], a:0},
+  {q:"パソコンのマウスは？", c:["動物","道具","食べ物","建物"], a:1},
+  {q:"水の化学式は？", c:["H2O","CO2","O2","NaCl"], a:0},
+  {q:"富士山の高さは？", c:["3776m","3000m","4000m","5000m"], a:0},
+  {q:"冬の寒さの原因は？", c:["太陽の位置","風","雨","雪"], a:0},
+  {q:"1+4×2は？", c:["10","9","8","6"], a:2},
+  {q:"地球の半径は？", c:["6371km","5000km","7000km","8000km"], a:0},
+  {q:"二酸化炭素の化学式は？", c:["CO","CO2","O2","H2O"], a:1},
+  {q:"七夕はいつ？", c:["7月7日","8月7日","6月7日","5月7日"], a:0},
+  {q:"英語で「猫」は？", c:["Dog","Cat","Bird","Fish"], a:1},
+  {q:"色の三原色は？", c:["赤青黄","赤青緑","赤黄緑","青黄黒"], a:0},
+  {q:"月は地球の周りを？", c:["回る","止まる","近づく","遠ざかる"], a:0},
+  {q:"水は氷になると？", c:["溶ける","固まる","蒸発する","消える"], a:1},
+  {q:"火は何でできている？", c:["水蒸気","気体","燃焼ガス","炎"], a:3},
+  {q:"1リットルは何ml？", c:["100","500","1000","2000"], a:2},
+  {q:"海水の塩分は？", c:["0.5%","1%","3%","5%"], a:2},
+  {q:"飛行機は何で浮く？", c:["空気","水","燃料","翼"], a:3},
+  {q:"砂糖の色は？", c:["白","黒","茶","透明"], a:0},
+  {q:"桜前線は何？", c:["花の開花の北上","桜の葉","桜餅","桜の木"], a:0},
+  {q:"雷は危険？", c:["はい","いいえ","場合による","わからない"], a:0},
+  {q:"日本の祝日は？", c:["元日","クリスマス","感謝祭","ハロウィン"], a:0},
+  {q:"夏休みは何月？", c:["6月","7月","8月","8月末","8月"], a:1},
+  {q:"水泳の呼吸法は？", c:["口で吸う","鼻で吸う","両方で吸う","息止め"], a:0},
+  {q:"日本の面積は？", c:["約37万km²","約50万km²","約10万km²","約100万km²"], a:0},
+  {q:"七草はいつ食べる？", c:["1月7日","2月7日","3月7日","4月7日"], a:0},
+  {q:"1ダースは？", c:["10","12","15","20"], a:1},
+];
+
+let currentIndex = 0;
+let score1=0, score2=0;
+let earlyPlayer = null;
+
+function startGame(){
+  document.getElementById('title-screen').style.display='none';
+  loadQuestion();
+}
+
+function loadQuestion(){
+  const currentQuestion = questions[currentIndex];
+  document.getElementById('question-text').textContent = currentQuestion.q;
+
+  earlyPlayer = null;
+  document.querySelectorAll('.early-text').forEach(el=>el.style.display='block');
+
+  // 両者に選択肢表示
+  const player1Box = document.getElementById('player1-choices');
+  const player2Box = document.getElementById('player2-choices');
+  player1Box.innerHTML=''; player2Box.innerHTML='';
+
+  currentQuestion.c.forEach((text,i)=>{
+    const btn1 = document.createElement('div');
+    btn1.className='choice';
+    btn1.textContent=text;
+    btn1.onclick=()=>answer(1,i);
+    player1Box.appendChild(btn1);
+
+    const btn2 = document.createElement('div');
+    btn2.className='choice';
+    btn2.textContent=text;
+    btn2.onclick=()=>answer(2,i);
+    player2Box.appendChild(btn2);
+  });
+}
+
+function answer(player,i){
+  if(earlyPlayer) return; // 先に押した人だけ判定
+  earlyPlayer = player;
+  document.querySelector(`#player${player}-area .early-text`).style.display='none';
+
+  const currentQuestion = questions[currentIndex];
+  if(i === currentQuestion.a){
+    if(player===1){ score1++; document.getElementById('score1').textContent=score1; }
+    else{ score2++; document.getElementById('score2').textContent=score2; }
+  }
+
+  // 次の問題
+  currentIndex++;
+  if(currentIndex >= questions.length) currentIndex=0;
+
+  if(score1>=5 || score2>=5){
+    alert(`ゲーム終了！\nPlayer1:${score1} - Player2:${score2}`);
+    location.reload();
+    return;
+  }
+
+  setTimeout(loadQuestion, 500); // 0.5秒待って次の問題
+}
+</script>
+</body>
+</html>
